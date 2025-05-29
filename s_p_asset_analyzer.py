@@ -29,7 +29,7 @@ def _():
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(r"""Let's obtain all reference data for all assets. """)
+    mo.md(r"""Let's obtain all reference data for all assets.""")
     return
 
 
@@ -85,7 +85,7 @@ def _(assets, assets_with_recent_metrics):
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(r"""Let's download the asset profiles and the network profiles. Since they are very nested, the `to_dataframe` method does not work very well. """)
+    mo.md(r"""Let's download the asset profiles and the network profiles. Since they are very nested, the `to_dataframe` method does not work very well.""")
     return
 
 
@@ -105,7 +105,7 @@ def _(client, pd):
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(r"""Let's see how many parts each asset has by splitting on the underscore. """)
+    mo.md(r"""Let's see how many parts each asset has by splitting on the underscore.""")
     return
 
 
@@ -118,7 +118,7 @@ def _(assets_with_metrics):
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(r"""Let's map the appropriate parts of the composite asset ticker to base, version and network. """)
+    mo.md(r"""Let's map the appropriate parts of the composite asset ticker to base, version and network.""")
     return
 
 
@@ -160,7 +160,7 @@ def _(assets_with_metrics, pd):
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(r"""Let's identify bridged assets by checking for `.e` (which means from Ethereum) or `.t` (which means from Terra). """)
+    mo.md(r"""Let's identify bridged assets by checking for `.e` (which means from Ethereum) or `.t` (which means from Terra).""")
     return
 
 
@@ -174,7 +174,7 @@ def _(assets_split_v2):
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(r"""Let us see how many assets per network we find. As we expected, Ethereum is number one on the list, followed by Solana, Optimism, and Base. """)
+    mo.md(r"""Let us see how many assets per network we find. As we expected, Ethereum is number one on the list, followed by Solana, Optimism, and Base.""")
     return
 
 
@@ -186,7 +186,7 @@ def _(assets_split_v2):
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(r"""Now we can merge the asset profile so that we get the token purpose. """)
+    mo.md(r"""Now we can merge the asset profile so that we get the token purpose.""")
     return
 
 
@@ -201,7 +201,7 @@ def _(assets_split_v2, networks, profiles):
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(r"""So far, we have 5 assets on Base and 5 on Optimism. """)
+    mo.md(r"""So far, we have 5 assets on Base and 5 on Optimism.""")
     return
 
 
@@ -221,7 +221,7 @@ def _(assets_split_v2):
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(r"""The native assets of the network need to be mapped to their network. Then we can merge the network profile to the assets on the network name. This also gives us access to the network type, which could be "roll-up" to show a layer 2. """)
+    mo.md(r"""The native assets of the network need to be mapped to their network. Then we can merge the network profile to the assets on the network name. This also gives us access to the network type, which could be "roll-up" to show a layer 2.""")
     return
 
 
@@ -256,89 +256,6 @@ def _(mo):
 
 
 @app.cell
-def _(assets_split_v2):
-    network_0 = assets_split_v2.loc[assets_split_v2.network.isnull()]
-    network_0
-    return (network_0,)
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""Let's see if we can use asset metrics to determine which of assets without an explicit network live on Ethereum. """)
-    return
-
-
-@app.cell
-def _(client):
-    cat = client.catalog_asset_metrics_v2().to_dataframe()
-
-    return (cat,)
-
-
-@app.cell
-def _(cat, network_0):
-    cat.loc[cat.asset.isin(network_0.asset)].groupby('metric').size()
-    return
-
-
-@app.cell
-def _(cat, network_0):
-    b = cat.loc[(cat.metric=='BlkCnt') & (cat.asset.isin(network_0.asset))]
-    b
-    return (b,)
-
-
-@app.cell
-def _(assets_split_v2, b):
-    assets_split_v2.loc[assets_split_v2.asset.isin(b.asset), 'network'] =  assets_split_v2.loc[assets_split_v2.asset.isin(b.asset), 'asset']
-    return
-
-
-@app.cell
-def _(assets_split_v2, b):
-    assets_split_v2.loc[assets_split_v2.asset.isin(b.asset), :]
-    return
-
-
-@app.cell
-def _(sec):
-    sec.loc[(sec.parent_asset.notnull())]
-    return
-
-
-@app.cell
-def _(profiles, sec):
-    # Number of assets with matching description in both dataframes
-    assets_desc_set = set(profiles['description'].dropna().unique())
-    sec_desc_set = set(sec['description'].dropna().unique())
-    matching_descriptions = assets_desc_set & sec_desc_set
-    num_matching = len(matching_descriptions)
-
-    # Assets existing in 'assets' but missing in 'sec'
-    assets_only = assets_desc_set - sec_desc_set
-
-    # Assets existing in 'sec' but missing in 'assets'
-    sec_only = sec_desc_set - assets_desc_set
-
-    result = {
-        "num_matching_descriptions": num_matching,
-        "assets_only_descriptions": assets_only,
-        "sec_only_descriptions": sec_only
-    }
-    result
-
-    return (
-        assets_desc_set,
-        assets_only,
-        matching_descriptions,
-        num_matching,
-        result,
-        sec_desc_set,
-        sec_only,
-    )
-
-
-@app.cell
 def _(profiles, sec):
     profiles_only_cols = set(profiles.columns) - set(sec.columns)
     sec_only_cols = set(sec.columns) - set(profiles.columns)
@@ -355,37 +272,6 @@ def _(profiles, sec):
 @app.cell
 def _(profiles, sec):
     set(sec.columns).intersection(set(profiles.columns))
-    return
-
-
-@app.cell
-def _(client):
-    markets = client.reference_data_markets(type='spot').to_dataframe()
-    markets
-    return (markets,)
-
-
-@app.cell
-def _(markets):
-    markets.loc[markets.base=='eos', ['market', 'base','base_native']]
-    return
-
-
-@app.cell
-def _(markets):
-    markets.loc[markets.base_native=='A', ['market', 'base','base_native']]
-    return
-
-
-@app.cell
-def _(markets):
-    markets.loc[markets.base_native.notnull() & markets.base_native.str.contains('vault'), ['market', 'base','base_native']]
-    return
-
-
-@app.cell
-def _(assets):
-    assets.loc[assets.asset=='a']
     return
 
 
