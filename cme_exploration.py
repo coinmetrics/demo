@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.12.9"
+__generated_with = "0.13.8"
 app = marimo.App(width="medium")
 
 
@@ -8,23 +8,16 @@ app = marimo.App(width="medium")
 def _():
     from coinmetrics.api_client import CoinMetricsClient
     import os
-    import marimo
-    from datetime import datetime, timedelta, time
+    import marimo as mo
+    from datetime import datetime, timedelta, time, timezone
     import matplotlib.pyplot as plt
     import pandas as pd
 
     client = CoinMetricsClient(os.getenv('CM_API_KEY'))
-    return (
-        CoinMetricsClient,
-        client,
-        datetime,
-        marimo,
-        os,
-        pd,
-        plt,
-        time,
-        timedelta,
-    )
+
+    end_time = datetime.now(tz=timezone.utc)
+    start_time = end_time - timedelta(days=60)
+    return client, end_time, pd, start_time
 
 
 @app.cell
@@ -35,8 +28,8 @@ def _(client):
 
 
 @app.cell
-def _(cme):
-    cme.loc[(cme.pair=='btc-usd') & (cme.expiration >= '2025-05-01')].groupby(['expiration', 'pair', 'type', 'contract_size'], observed=True).agg({
+def _(cme, end_time):
+    cme.loc[(cme.pair=='btc-usd') & (cme.expiration >= end_time)].groupby(['expiration', 'pair', 'type', 'contract_size'], observed=True).agg({
         'strike': ['count', 'min', 'max'],
         'market': ['count', 'first']
     })
@@ -44,87 +37,9 @@ def _(cme):
 
 
 @app.cell
-def _(cme):
-    import numpy as np
-
-    # Filter for contract_size == 5
-    _cme = cme[cme.contract_size == 5]
-
-    # Only options have a strike price
-    # Keep only rows with a strike price
-    _cme_opt = _cme[_cme['strike'].notnull()]
-
-    # Prepare grid: rows = expiration, cols = strike
-    pivot = (_cme_opt
-             .assign(exists=1)
-             .pivot_table(index='expiration', columns='strike', values='exists', fill_value=0)
-            )
-
-    # Convert to display characters
-    display_grid = pivot.applymap(lambda x: '( )' if x == 1 else '-')
-
-    # Sort index (expiration) and columns (strike)
-    display_grid = display_grid.sort_index().sort_index(axis=1)
-
-    display_grid
-
-
-    return display_grid, np, pivot
-
-
-@app.cell
-def _(pd, pivot):
-    def _():
-        import matplotlib.pyplot as plt
-
-        # Prepare data for plotting
-        _grid = pivot.copy()
-        _grid.index = pd.to_datetime(_grid.index).date  # Use just date, not full datetime
-        strikes = _grid.columns.astype(str)
-        expirations = _grid.index.astype(str)
-
-        fig, ax = plt.subplots(figsize=(min(18, 0.38*len(strikes)), min(8, 0.7*len(expirations))))
-
-        # Plot as heatmap (1=option exists, 0=not)
-        cax = ax.imshow(_grid.values, aspect='auto', cmap='Greens', interpolation='nearest')
-
-        # Set axis labels and ticks
-        ax.set_xticks(range(len(strikes)))
-        ax.set_yticks(range(len(expirations)))
-        ax.set_xticklabels(strikes, rotation=90, fontsize=10)
-        ax.set_yticklabels(expirations, fontsize=10)
-
-        ax.set_xlabel('Strike Price')
-        ax.set_ylabel('Expiration Date')
-        ax.set_title('CME BTC/ETH Option Grid (contract size = 5)\nGreen: option available')
-
-        # Color bar
-        fig.colorbar(cax, ax=ax, fraction=0.036, pad=0.04, label="Option Exists")
-
-        plt.tight_layout()
-        return plt.gca()
-
-
-    _()
-    return
-
-
-@app.cell
-def _(cme):
-    cme.loc[(cme.pair=='btc-usd') & (cme.expiration == '2025-05-30T15:00:00.000Z') & (cme.type=='future')]
-    return
-
-
-@app.cell
-def _(cme):
-    cme.loc[[1867, 2473], :]
-    return
-
-
-@app.cell
-def _(cme):
+def _(cme, end_time):
     my_markets = cme.loc[(cme.symbol.apply(len)==5) 
-        & (cme.expiration >= '2025-05-01')
+        & (cme.expiration >= end_time)
         & (cme.size_asset.isin(['btc', 'eth']))
         ].sort_values(['expiration', 'size_asset']).loc[:, ['expiration', 'symbol', 'market']]
     my_markets.set_index('symbol')
@@ -138,19 +53,12 @@ def _(client, my_markets):
 
 
 @app.cell
-def _(client):
-    df = client.get_market_candles(markets=['cme-BTCK5-future',  ],
-                             start_time='2025-05-27',
-                             frequency='1m').to_dataframe() # 'cme-BTCK5-future', 'cme-BTCM5-future',
+def _(client, start_time):
+    df = client.get_market_candles(markets=['cme-BTCM5-future',  ],
+                             start_time=start_time,
+                             frequency='1d').to_dataframe() # 'cme-BTCK5-future', 'cme-BTCM5-future',
     df
     return (df,)
-
-
-@app.cell
-def _():
-    # Let's now see if we can replicate the volume calculation on the CME website. 
-    # https://www.cmegroup.com/markets/cryptocurrencies/bitcoin/bitcoin.quotes.html
-    return
 
 
 @app.cell
@@ -178,14 +86,6 @@ def _(df, pd):
 def _(df, pd):
     import plotly.graph_objs as go
 
-    # Ensure column names for price
-    price_cols = [col for col in df.columns if col.startswith('price_')]
-    # Ensure required candle columns
-    required_cols = ['price_open', 'price_close', 'price_low', 'price_high', 'volume']
-    if not all(col in df.columns for col in required_cols):
-        raise ValueError(f"Missing required candle columns in df: {required_cols}")
-
-    # Get last 90 minutes of data (assuming 1m frequency)
     candles_90 = df.sort_index().iloc[-90:].copy()
     # If the index is not a DatetimeIndex, reset and use time column if available
     if not isinstance(candles_90.index, pd.DatetimeIndex):
@@ -220,7 +120,7 @@ def _(df, pd):
 
     # Layout for dual y-axis
     fig.update_layout(
-        title="CME Candle Chart with Volume (Last 90 Minutes)",
+        title="CME Candle Chart with Volume (BTCM5=June 2025 epxiry)",
         yaxis_title="Price",
         xaxis_title="Time",
         yaxis2=dict(title='Volume', overlaying='y', side='right', showgrid=False),
@@ -230,7 +130,7 @@ def _(df, pd):
     )
 
     fig
-    return candles_90, fig, go, price_cols, required_cols
+    return
 
 
 @app.cell
@@ -287,7 +187,7 @@ def _(ob, pd):
             )
     pd.DataFrame(unpack)
 
-    return de, m, unpack
+    return
 
 
 @app.cell
@@ -305,6 +205,56 @@ def _(EAM):
 @app.cell
 def _(EAM):
     EAM.loc[(EAM.metric.str.contains('option')) & (EAM.exchange_asset.str.startswith('cme-'))]
+    return
+
+
+@app.cell
+def _(client, pd):
+    import plotly.express as px
+
+    # Prepare data
+    metric_name = "volume_reported_option_notional_usd_1d"
+    exchange_asset = "cme-usd"
+    freq = "1d"
+    series_px = client.get_exchange_asset_metrics(
+        metrics=[metric_name], 
+        frequency=freq, 
+        exchange_assets=[exchange_asset],
+    ).to_dataframe().reset_index()
+    series_px['time'] = pd.to_datetime(series_px['time'])
+
+    # Find top 3
+    top3 = series_px.nlargest(3, metric_name)
+
+    # Plot
+    fig_px = px.line(
+        series_px,
+        x='time',
+        y=metric_name,
+        title="CME Reported Option Notional Volume (Top 3 Labeled)",
+        labels={
+            "time": "Time",
+            metric_name: "Option Notional Volume (USD)"
+        },
+        markers=True
+    )
+
+    # Add explicit text labels for top 3 values
+    for _, row in top3.iterrows():
+        fig_px.add_annotation(
+            x=row['time'],
+            y=row[metric_name],
+            text=f"{row['time'].date().isoformat()}/{row[metric_name]/1e6:,.0f} mUSD",
+            showarrow=True,
+            arrowhead=2,
+            ay=-40,
+            font=dict(color="crimson", size=13)
+        )
+
+    fig_px.update_traces(line_color="indigo", marker=dict(size=7))
+    fig_px.update_layout(yaxis_title="Option Notional Volume (USD)", xaxis_title="Time")
+    fig_px
+
     return
 
 
