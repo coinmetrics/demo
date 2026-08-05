@@ -1032,6 +1032,12 @@ components:
         Name:
           description: API key name
           type: string
+        ObjectFilters:
+          description: MarketAccount object filters restricting this key's permissions.
+            Empty/absent means unrestricted.
+          items:
+            $ref: '#/components/schemas/ObjectFilter'
+          type: array
         Permissions:
           description: List of permissions
           items:
@@ -1455,6 +1461,7 @@ components:
       - SettleDateMismatch
       - SubAccountMismatch
       - StatusViolation
+      - SideViolation
       type: string
       x-enumDescriptions:
         AvailableQtyViolation: Child command risks overfilling parent order
@@ -1462,6 +1469,7 @@ components:
           units
         MarketViolation: Child command targets market not allowed by parent order
         SettleDateMismatch: Child command settle date does not match parent
+        SideViolation: Child command side does not match parent order side
         StatusViolation: Child risk cannot be opened at this care order status
         SubAccountMismatch: Child command subaccount does not match parent
     ArchivedStatus:
@@ -1587,6 +1595,12 @@ components:
           type: string
         UnitCurrencyGamma_Net:
           description: Home Currency Gamma Net
+          type: string
+        UnitCurrencyGammaExposure_Gross:
+          description: Home Currency Gamma Exposure Gross
+          type: string
+        UnitCurrencyGammaExposure_Net:
+          description: Home Currency Gamma Exposure Net
           type: string
         UnitCurrencyRho_Gross:
           description: Home Currency Rho Gross
@@ -1732,6 +1746,12 @@ components:
           type: string
         UnitCurrencyGamma_Net:
           description: Home Currency Gamma Net
+          type: string
+        UnitCurrencyGammaExposure_Gross:
+          description: Home Currency Gamma Exposure Gross
+          type: string
+        UnitCurrencyGammaExposure_Net:
+          description: Home Currency Gamma Exposure Net
           type: string
         UnitCurrencyRho_Gross:
           description: Home Currency Rho Gross
@@ -1889,6 +1909,8 @@ components:
           type: string
         TransactionAction:
           $ref: '#/components/schemas/AssetTransactionAction'
+        TransactionDetails:
+          description: Optional transaction details
         TransactionID:
           description: ID of this transaction at the market
           type: string
@@ -1990,6 +2012,8 @@ components:
           type: string
         TransactionAction:
           $ref: '#/components/schemas/AssetTransactionAction'
+        TransactionDetails:
+          description: Optional transaction details
         TransactionID:
           description: ID of this transaction at the market
           type: string
@@ -2071,6 +2095,8 @@ components:
           type: string
         TransactionAction:
           $ref: '#/components/schemas/AssetTransactionAction'
+        TransactionDetails:
+          description: Optional transaction details
         TransactionID:
           description: ID of this transaction at the market
           type: string
@@ -2264,6 +2290,8 @@ components:
           type: string
         TransactionAction:
           $ref: '#/components/schemas/AssetTransactionAction'
+        TransactionDetails:
+          description: Optional transaction details
         TransactionID:
           description: ID of this transaction at the market
           type: string
@@ -6433,6 +6461,11 @@ components:
         DisplayName:
           description: Display name of the market
           type: string
+        EnclaveSecrets:
+          description: JSON-encoded enclave secrets bundle containing KMS-encrypted
+            secret values
+          format: String
+          type: string
         Label:
           description: Credential label
           format: String
@@ -6491,6 +6524,11 @@ components:
           description: Credential ID
           format: int64
           type: number
+        EnclaveSecrets:
+          description: JSON-encoded enclave secrets bundle containing KMS-encrypted
+            secret values
+          format: String
+          type: string
         Label:
           description: Credential label
           format: String
@@ -6549,6 +6587,11 @@ components:
           description: Credential ID
           format: int64
           type: number
+        EnclaveSecrets:
+          description: JSON-encoded enclave secrets bundle containing KMS-encrypted
+            secret values
+          format: String
+          type: string
         Label:
           description: Credential label
           format: String
@@ -6636,6 +6679,11 @@ components:
           description: Credential ID
           format: int64
           type: number
+        EnclaveSecrets:
+          description: JSON-encoded enclave secrets bundle containing KMS-encrypted
+            secret values
+          format: String
+          type: string
         Label:
           description: Credential label
           format: String
@@ -7533,6 +7581,22 @@ components:
       - data
       title: CustodianEvmTxResponse
       type: object
+    CustodianSignScheme:
+      enum:
+      - Erc191
+      type: string
+      x-enumDescriptions:
+        Erc191: ERC-191 personal-message signing with secp256k1
+    CustodianSignStatus:
+      enum:
+      - Success
+      - InternalError
+      - ExternalError
+      type: string
+      x-enumDescriptions:
+        ExternalError: Signing failed at the external custody provider level
+        InternalError: Signing failed at the custody gateway level
+        Success: The payload was signed successfully
     CustodianTxAction:
       enum:
       - Transfer
@@ -18446,6 +18510,28 @@ components:
         CustomerUserID:
           description: User ID
           type: string
+        Label:
+          description: Label of the Customer User ApiKey
+          format: String
+          type: string
+        ObjectFilters:
+          description: MarketAccount object filters restricting this key's permissions.
+            Empty/absent means unrestricted.
+          items:
+            properties:
+              Action:
+                description: Permission action the filter applies to (e.g. Read, Write)
+                type: string
+              MarketAccount:
+                description: MarketAccount name the permission is restricted to
+                type: string
+            type: object
+          type: array
+        Permissions:
+          description: Permission codes granted to this API key
+          items:
+            type: string
+          type: array
         Revision:
           description: Revision
           format: uint32
@@ -18554,6 +18640,10 @@ components:
         CustomerUserID:
           description: User ID
           type: string
+        Label:
+          description: Label of the Customer User ApiKey
+          format: String
+          type: string
         Revision:
           description: Revision
           format: uint32
@@ -18573,6 +18663,22 @@ components:
     CustomerUserApiKeyResponse:
       additionalProperties: false
       description: API response wrapper for CustomerUserApiKey
+      example:
+        data:
+        - ApiKey: TAL7X2K9M4PQ
+          CustomerUserApiKeyID: 1751K3QF00D00
+          CustomerUserID: 174K2GPD80C00
+          Label: Trading Bot
+          ObjectFilters:
+          - Action: Trade
+            MarketAccount: campus-1
+          Permissions:
+          - Read
+          - Trade
+          Timestamp: '2026-07-20T14:32:07.512384Z'
+          WhitelistedIps: 203.0.113.5,203.0.113.6
+        ts: '2026-07-27T20:15:53.027239Z'
+        type: CustomerUserApiKey
       properties:
         data:
           description: Array of CustomerUserApiKey items
@@ -19310,6 +19416,9 @@ components:
       properties:
         Allocation:
           $ref: '#/components/schemas/Allocation'
+        CollateralSubAccount:
+          description: Identifier for the sub-account associated with the collateral
+          type: string
         Comments:
           description: Additional information attached to the deal
           format: String
@@ -20104,6 +20213,9 @@ components:
       properties:
         Allocation:
           $ref: '#/components/schemas/Allocation'
+        CollateralSubAccount:
+          description: Identifier for the sub-account associated with the collateral
+          type: string
         Comments:
           description: Additional information attached to the deal
           format: String
@@ -20199,6 +20311,9 @@ components:
       properties:
         Allocation:
           $ref: '#/components/schemas/Allocation'
+        CollateralSubAccount:
+          description: Identifier for the sub-account associated with the collateral
+          type: string
         Comments:
           description: Additional information attached to the deal
           format: String
@@ -20323,6 +20438,9 @@ components:
       properties:
         Allocation:
           $ref: '#/components/schemas/Allocation'
+        CollateralSubAccount:
+          description: Identifier for the sub-account associated with the collateral
+          type: string
         Comments:
           description: Additional information attached to the deal
           format: String
@@ -24458,11 +24576,14 @@ components:
         AvgCost:
           description: AvgCost of the position at the time of the funding event
           type: string
+        EffectiveFundingRate:
+          description: Effective funding rate
+          type: string
         EventID:
           description: Assigned OID of this funding event
           type: string
         FundingRate:
-          description: Funding rate
+          description: Funding rate from funding configuration
           type: string
         FundingRateConfigID:
           description: ID of the FundingRateConfiguration used to calculate the payment
@@ -24512,11 +24633,14 @@ components:
         AvgCost:
           description: AvgCost of the position at the time of the funding event
           type: string
+        EffectiveFundingRate:
+          description: Effective funding rate
+          type: string
         EventID:
           description: Assigned OID of this funding event
           type: string
         FundingRate:
-          description: Funding rate
+          description: Funding rate from funding configuration
           type: string
         FundingRateConfigID:
           description: ID of the FundingRateConfiguration used to calculate the payment
@@ -25033,6 +25157,10 @@ components:
         Asset:
           description: Asset ID for the tracked hedge position
           type: string
+        CrossAssetRiskGroup:
+          description: CrossAssetRiskGroup for group controls; 0 for single-asset
+            controls
+          type: string
         HedgeControlID:
           description: Unique identifier for the hedge control
           type: string
@@ -25117,6 +25245,10 @@ components:
             Control if one exists
         Asset:
           description: Asset ID for the tracked hedge position
+          type: string
+        CrossAssetRiskGroup:
+          description: CrossAssetRiskGroup for group controls; 0 for single-asset
+            controls
           type: string
         HedgeControlID:
           description: Unique identifier for the hedge control
@@ -25651,6 +25783,10 @@ components:
         Asset:
           description: Asset ID for the tracked hedge position
           type: string
+        CrossAssetRiskGroup:
+          description: CrossAssetRiskGroup for group controls; 0 for single-asset
+            controls
+          type: string
         CurrentAssetPosition:
           description: Current Computed Asset Position
           type: string
@@ -25745,6 +25881,10 @@ components:
         Asset:
           description: Asset ID for the tracked hedge position
           type: string
+        CrossAssetRiskGroup:
+          description: CrossAssetRiskGroup for group controls; 0 for single-asset
+            controls
+          type: string
         CurrentAssetPosition:
           description: Current Computed Asset Position
           type: string
@@ -25838,6 +25978,10 @@ components:
           type: number
         Asset:
           description: Asset ID for the tracked hedge position
+          type: string
+        CrossAssetRiskGroup:
+          description: CrossAssetRiskGroup for group controls; 0 for single-asset
+            controls
           type: string
         CurrentAssetPosition:
           description: Current Computed Asset Position
@@ -25962,6 +26106,10 @@ components:
         Asset:
           description: Asset ID for the tracked hedge position
           type: string
+        CrossAssetRiskGroup:
+          description: CrossAssetRiskGroup for group controls; 0 for single-asset
+            controls
+          type: string
         CurrentAssetPosition:
           description: Current Computed Asset Position
           type: string
@@ -26085,6 +26233,10 @@ components:
         Asset:
           description: Asset ID for the tracked hedge position
           type: string
+        CrossAssetRiskGroup:
+          description: CrossAssetRiskGroup monitored in Group mode; 0 in SingleAsset
+            mode
+          type: string
         HedgeAggregation:
           description: AggregationID to send on the Hedge Order for this Rule
           type: string
@@ -26144,6 +26296,10 @@ components:
         Asset:
           description: Asset ID for the tracked hedge position
           type: string
+        CrossAssetRiskGroup:
+          description: CrossAssetRiskGroup monitored in Group mode; 0 in SingleAsset
+            mode
+          type: string
         HedgeAggregation:
           description: AggregationID to send on the Hedge Order for this Rule
           type: string
@@ -26202,6 +26358,10 @@ components:
           type: number
         Asset:
           description: Asset ID for the tracked hedge position
+          type: string
+        CrossAssetRiskGroup:
+          description: CrossAssetRiskGroup monitored in Group mode; 0 in SingleAsset
+            mode
           type: string
         HedgeAggregation:
           description: AggregationID to send on the Hedge Order for this Rule
@@ -26290,6 +26450,10 @@ components:
           type: number
         Asset:
           description: Asset ID for the tracked hedge position
+          type: string
+        CrossAssetRiskGroup:
+          description: CrossAssetRiskGroup monitored in Group mode; 0 in SingleAsset
+            mode
           type: string
         HedgeAggregation:
           description: AggregationID to send on the Hedge Order for this Rule
@@ -34533,8 +34697,6 @@ components:
           type: string
         Metadata:
           description: Metadata for this market currency
-          format: String
-          type: string
         Revision:
           description: Revision
           format: uint32
@@ -34581,8 +34743,6 @@ components:
           type: string
         Metadata:
           description: Metadata for this market currency
-          format: String
-          type: string
         Revision:
           description: Revision
           format: uint32
@@ -37230,8 +37390,6 @@ components:
           type: string
         Metadata:
           description: Metadata for this market security
-          format: String
-          type: string
         MinAmountIncrement:
           description: Market amount increment
           type: string
@@ -37602,8 +37760,6 @@ components:
           type: string
         Metadata:
           description: Metadata for this market security
-          format: String
-          type: string
         MinAmountIncrement:
           description: Market amount increment
           type: string
@@ -41847,6 +42003,17 @@ components:
           description: A missed payment event
           type: boolean
       title: OTCTriggerEvents
+      type: object
+    ObjectFilter:
+      description: MarketAccount-scoped object filter on a customer-user API key permission
+      properties:
+        Action:
+          description: Permission action the filter applies to (e.g. Read, Write)
+          type: string
+        MarketAccount:
+          description: MarketAccount name the permission is restricted to
+          type: string
+      title: ObjectFilter
       type: object
     OnPlatformAnalyticsTier:
       description: The tier of On-Platform Analytics the client is enrolled in
@@ -53415,9 +53582,7 @@ components:
           description: Canonical size increment
           type: string
         Metadata:
-          description: Metadata for this market currency
-          format: String
-          type: string
+          description: Metadata for this security
         MinAmountIncrement:
           description: Market amount increment
           type: string
@@ -53601,9 +53766,7 @@ components:
           description: Canonical size increment
           type: string
         Metadata:
-          description: Metadata for this market currency
-          format: String
-          type: string
+          description: Metadata for this security
         MinAmountIncrement:
           description: Market amount increment
           type: string
@@ -69091,6 +69254,8 @@ paths:
                     type: string
                   TransactionAction:
                     $ref: '#/components/schemas/AssetTransactionAction'
+                  TransactionDetails:
+                    description: Optional transaction details
                   TransactionID:
                     description: ID of this transaction at the market
                     type: string
@@ -70029,6 +70194,10 @@ paths:
               properties:
                 Allocation:
                   $ref: '#/components/schemas/Allocation'
+                CollateralSubAccount:
+                  description: Identifier for the sub-account associated with the
+                    collateral
+                  type: string
                 Comments:
                   description: Additional information attached to the deal
                   format: String
@@ -70214,6 +70383,10 @@ paths:
               properties:
                 Allocation:
                   $ref: '#/components/schemas/Allocation'
+                CollateralSubAccount:
+                  description: Identifier for the sub-account associated with the
+                    collateral
+                  type: string
                 Comments:
                   description: Additional information attached to the deal
                   format: String
@@ -70580,6 +70753,10 @@ paths:
               properties:
                 Allocation:
                   $ref: '#/components/schemas/Allocation'
+                CollateralSubAccount:
+                  description: Identifier for the sub-account associated with the
+                    collateral
+                  type: string
                 Comments:
                   description: Additional information attached to the deal
                   format: String
@@ -70759,6 +70936,10 @@ paths:
               properties:
                 Allocation:
                   $ref: '#/components/schemas/Allocation'
+                CollateralSubAccount:
+                  description: Identifier for the sub-account associated with the
+                    collateral
+                  type: string
                 Comments:
                   description: Additional information attached to the deal
                   format: String
@@ -71744,6 +71925,11 @@ paths:
                   description: Credential ID
                   format: int64
                   type: number
+                EnclaveSecrets:
+                  description: JSON-encoded enclave secrets bundle containing KMS-encrypted
+                    secret values
+                  format: String
+                  type: string
                 Label:
                   description: Credential label
                   format: String
@@ -72093,6 +72279,11 @@ paths:
                   description: Credential ID
                   format: int64
                   type: number
+                EnclaveSecrets:
+                  description: JSON-encoded enclave secrets bundle containing KMS-encrypted
+                    secret values
+                  format: String
+                  type: string
                 Label:
                   description: Credential label
                   format: String
@@ -72274,6 +72465,11 @@ paths:
                   description: Credential ID
                   format: int64
                   type: number
+                EnclaveSecrets:
+                  description: JSON-encoded enclave secrets bundle containing KMS-encrypted
+                    secret values
+                  format: String
+                  type: string
                 Label:
                   description: Credential label
                   format: String
@@ -79093,6 +79289,112 @@ paths:
       summary: Get default customer security
       tags:
       - Customer Securities
+  /customer-user-api-keys:
+    get:
+      description: Retrieve all customer user API keys across the organization, optionally
+        filtered by customer user
+      operationId: listCustomerUserApiKeys
+      parameters:
+      - description: Filter to API keys belonging to this customer user
+        in: query
+        name: CustomerUserID
+        required: false
+        schema:
+          type: string
+      - description: Number of records to return in response. Defaults to 1000.
+        in: query
+        name: limit
+        required: false
+        schema:
+          type: integer
+      - description: The value of the `next` field from the previous request for pagination
+        in: query
+        name: after
+        required: false
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                additionalProperties: false
+                description: API response wrapper for CustomerUserApiKey
+                example:
+                  data:
+                  - ApiKey: TAL7X2K9M4PQ
+                    CustomerUserApiKeyID: 1751K3QF00D00
+                    CustomerUserID: 174K2GPD80C00
+                    Label: Trading Bot
+                    ObjectFilters:
+                    - Action: Trade
+                      MarketAccount: campus-1
+                    Permissions:
+                    - Read
+                    - Trade
+                    Timestamp: '2026-07-20T14:32:07.512384Z'
+                    WhitelistedIps: 203.0.113.5,203.0.113.6
+                  ts: '2026-07-27T20:15:53.027239Z'
+                  type: CustomerUserApiKey
+                properties:
+                  data:
+                    description: Array of CustomerUserApiKey items
+                    items:
+                      $ref: '#/components/schemas/CustomerUserApiKey'
+                    type: array
+                  next:
+                    description: Pagination token for fetching the next page of results.
+                      Present when more data is available.
+                    example: MTAwMQ==
+                    type: string
+                  ts:
+                    description: Timestamp in ISO-8601 UTC format with microsecond
+                      resolution
+                    example: '2019-09-18T03:04:07.560671Z'
+                    format: date-time
+                    type: string
+                  type:
+                    description: The type of message/data returned
+                    example: CustomerUserApiKey
+                    type: string
+                required:
+                - type
+                - ts
+                - data
+                title: CustomerUserApiKeyResponse
+                type: object
+          description: Successful response
+        '400':
+          content:
+            application/json:
+              schema:
+                description: Error message describing what went wrong
+                type: string
+          description: Bad Request - Invalid input or parameters
+        '401':
+          content:
+            application/json:
+              schema:
+                description: Error message describing what went wrong
+                type: string
+          description: Unauthorized - Authentication required
+        '403':
+          content:
+            application/json:
+              schema:
+                description: Error message describing what went wrong
+                type: string
+          description: Forbidden - Insufficient permissions
+        '500':
+          content:
+            application/json:
+              schema:
+                description: Error message describing what went wrong
+                type: string
+          description: Internal Server Error
+      summary: List customer user API keys
+      tags:
+      - Customer API
   /customer-users:
     get:
       description: Retrieve customer users
@@ -79554,7 +79856,29 @@ paths:
           application/json:
             schema:
               items:
-                type: string
+                description: Request schema for creating/updating CustomerUserObjectFilter
+                properties:
+                  Action:
+                    $ref: '#/components/schemas/CustomerPermissionAction'
+                  CustomerUserID:
+                    description: Unique Identifier for Customer User
+                    type: string
+                  Filter:
+                    description: Filter specification
+                    type: string
+                  Revision:
+                    description: Revision
+                    format: uint32
+                    type: number
+                  Timestamp:
+                    description: Internal time in number of nanoseconds since Unix
+                      epoch
+                    format: date-time
+                    type: string
+                  UpdateAction:
+                    $ref: '#/components/schemas/UpdateAction'
+                title: CustomerUserObjectFilterRequest
+                type: object
               type: array
         required: true
       responses:
@@ -79747,12 +80071,11 @@ paths:
             application/json:
               schema:
                 additionalProperties: false
-                description: API response wrapper for CustomerUserApiKey
+                description: API response wrapper for ApiKey
                 properties:
                   data:
-                    description: Array of CustomerUserApiKey items
                     items:
-                      $ref: '#/components/schemas/CustomerUserApiKey'
+                      $ref: '#/components/schemas/ApiKey'
                     type: array
                   next:
                     description: Pagination token for fetching the next page of results.
@@ -79767,13 +80090,13 @@ paths:
                     type: string
                   type:
                     description: The type of message/data returned
-                    example: CustomerUserApiKey
+                    example: ApiKey
                     type: string
                 required:
                 - type
                 - ts
                 - data
-                title: CustomerUserApiKeyResponse
+                title: ApiKeyResponse
                 type: object
           description: API key updated
         '400':
@@ -79987,8 +80310,19 @@ paths:
               properties:
                 Admin:
                   type: boolean
+                InsertObjectFilters:
+                  description: MarketAccount object filters to add to the key. Each
+                    must already be authorized on the user (or the user must be unrestricted).
+                  items:
+                    $ref: '#/components/schemas/ObjectFilter'
+                  type: array
                 Read:
                   type: boolean
+                RemoveObjectFilters:
+                  description: MarketAccount object filters to remove from the key.
+                  items:
+                    $ref: '#/components/schemas/ObjectFilter'
+                  type: array
                 Trade:
                   type: boolean
                 Write:
@@ -80002,12 +80336,11 @@ paths:
             application/json:
               schema:
                 additionalProperties: false
-                description: API response wrapper for CustomerUserApiKey
+                description: API response wrapper for ApiKey
                 properties:
                   data:
-                    description: Array of CustomerUserApiKey items
                     items:
-                      $ref: '#/components/schemas/CustomerUserApiKey'
+                      $ref: '#/components/schemas/ApiKey'
                     type: array
                   next:
                     description: Pagination token for fetching the next page of results.
@@ -80022,13 +80355,13 @@ paths:
                     type: string
                   type:
                     description: The type of message/data returned
-                    example: CustomerUserApiKey
+                    example: ApiKey
                     type: string
                 required:
                 - type
                 - ts
                 - data
-                title: CustomerUserApiKeyResponse
+                title: ApiKeyResponse
                 type: object
           description: Permissions updated
         '400':
@@ -80195,7 +80528,29 @@ paths:
           application/json:
             schema:
               items:
-                type: string
+                description: Request schema for creating/updating CustomerUserObjectFilter
+                properties:
+                  Action:
+                    $ref: '#/components/schemas/CustomerPermissionAction'
+                  CustomerUserID:
+                    description: Unique Identifier for Customer User
+                    type: string
+                  Filter:
+                    description: Filter specification
+                    type: string
+                  Revision:
+                    description: Revision
+                    format: uint32
+                    type: number
+                  Timestamp:
+                    description: Internal time in number of nanoseconds since Unix
+                      epoch
+                    format: date-time
+                    type: string
+                  UpdateAction:
+                    $ref: '#/components/schemas/UpdateAction'
+                title: CustomerUserObjectFilterRequest
+                type: object
               type: array
         required: true
       responses:
@@ -94807,6 +95162,10 @@ paths:
                 Asset:
                   description: Asset ID for the tracked hedge position
                   type: string
+                CrossAssetRiskGroup:
+                  description: CrossAssetRiskGroup monitored in Group mode; 0 in SingleAsset
+                    mode
+                  type: string
                 HedgeAggregation:
                   description: AggregationID to send on the Hedge Order for this Rule
                   type: string
@@ -95042,6 +95401,10 @@ paths:
                 Asset:
                   description: Asset ID for the tracked hedge position
                   type: string
+                CrossAssetRiskGroup:
+                  description: CrossAssetRiskGroup monitored in Group mode; 0 in SingleAsset
+                    mode
+                  type: string
                 HedgeAggregation:
                   description: AggregationID to send on the Hedge Order for this Rule
                   type: string
@@ -95193,6 +95556,10 @@ paths:
                   type: number
                 Asset:
                   description: Asset ID for the tracked hedge position
+                  type: string
+                CrossAssetRiskGroup:
+                  description: CrossAssetRiskGroup monitored in Group mode; 0 in SingleAsset
+                    mode
                   type: string
                 HedgeAggregation:
                   description: AggregationID to send on the Hedge Order for this Rule
