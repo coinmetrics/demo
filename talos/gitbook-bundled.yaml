@@ -35041,7 +35041,6 @@ components:
         BestBidIV: Best Bid IV
         BestOffer: Offer
         BestOfferIV: Best Bid IV
-        Bid: Bid 1
         BookKeepalive: Book Keepalive
         BookOffline: Book Offline
         BookReset: Book Reset
